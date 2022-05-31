@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  nginx:
+    build: ./nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - app1
+      - app2
+  mysql:
+    image:  percona/percona-server:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'test'
+      MYSQL_USER: 'test'
+      MYSQL_PASSWORD: 'test'
+      MYSQL_ROOT_PASSWORD: 'test'
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+  app1:
+    build:
+      context: ./
+      dockerfile: ./app1
+    ports:
+      - "5001:5000"
+    depends_on:
+      mysql-server:
+          condition: service_healthy
+    environment:
+      DATABASES__DEFAULT__HOST: mysql-server
+    scale: 1
+  app2:
+    build:
+      context: ./
+      dockerfile: ./app1
+    ports:
+      - "5002:5000"
+    depends_on:
+      mysql-server:
+          condition: service_healthy
+    environment:
+      DATABASES__DEFAULT__HOST: mysql-server
+    scale: 1
